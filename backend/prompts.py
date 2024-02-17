@@ -54,7 +54,7 @@ After reviewing the financial reports, [PERSON_1] announced an impressive [NUMBE
 """.strip())
 
 
-redactor_incontext_prompt_template = f'''{redactor_incontext_examples}
+redactor_incontext_prompt_template =  redactor_incontext_examples + '''
 Input:
 ```
 {}
@@ -135,4 +135,3 @@ The redacted text and the mapping should be returned as a JSON object with the f
 Do NOT include any part of this instruction in your output. Your response should only be the JSON object containing the redacted text and the redaction mapping.
 """.strip())
 
->>>>>>> Stashed changes

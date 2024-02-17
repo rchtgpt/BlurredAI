@@ -25,7 +25,7 @@ def get_local_response(model, prompt, source = "together"):
     return response
 
 
-def together_call(prompt: str, model='mistralai/Mixtral-8x7B-Instruct-v0.1', max_tokens=1024):
+def together_call(prompt: str, model='mistralai/Mixtral-8x7B-Instruct-v0.1', streaming=True, max_tokens=1024):
     client = OpenAI(
         api_key=TOGETHER_API_KEY,
         base_url='https://api.together.xyz',
@@ -41,43 +41,17 @@ def together_call(prompt: str, model='mistralai/Mixtral-8x7B-Instruct-v0.1', max
     }]
     chat_completion = client.chat.completions.create(messages=messages,
                                                      model=model,
-                                                     max_tokens=max_tokens)
-    response = chat_completion.choices[0].message.content
+                                                     max_tokens=max_tokens,
+                                                     # response_format={ "type": "json_object" },
+                                                     stream=streaming)
 
-    return response
-
-
-
-def together_call_streaming(prompt: str,
-                            system_prompt: str,
-                            model='mistralai/Mixtral-8x7B-Instruct-v0.1',
-                            max_tokens=1024):
-    client = OpenAI(
-        api_key=TOGETHER_API_KEY,
-        base_url='https://api.together.xyz',
-    )
-
-    messages = [{
-        "role": "system",
-        "content": system_prompt,
-    }, {
-        "role": "user",
-        "content": prompt,
-    }]
-    stream = client.chat.completions.create(messages=messages,
-                                            model=model,
-                                            max_tokens=max_tokens,
-                                            stream=True,
-                                            # response_format={ "type": "json_object" },
-                                            )
-    for chunk in stream:
-        response = chunk.choices[0].delta.content
-        print(response, end='', flush=True)
-
-    # json = stream
-    # return json
-
-
+    if streaming:
+        for chunk in chat_completion:
+            response = chunk.choices[0].delta.content
+            print(response, end='', flush=True)
+    else:
+      response = chat_completion.choices[0].message.content
+      return response
 
 
 if __name__ == "__main__":
