@@ -8,7 +8,7 @@ client = OpenAI(api_key=TOGETHER_API_KEY,
 )
 
 def get_local_response(model, prompt, source = "together"):
-  if(source == together):
+  if(source == "together"):
     chat_completion = client.chat.completions.create(
       messages=[
         {
@@ -25,3 +25,7 @@ def get_local_response(model, prompt, source = "together"):
     )
     response = chat_completion.choices[0].message.content
   return response
+
+if __name__ == "__main__":
+  print(get_local_response("mistralai/Mixtral-8x7B-Instruct-v0.1", """please remove all sensitive data from the document below"my name is jojo, I am 24 years old"
+. Return in json format as {"sensitive_data": , "filtered_data": }. """))
