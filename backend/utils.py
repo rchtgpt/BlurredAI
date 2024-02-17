@@ -1,7 +1,7 @@
 import json
 import re
 from ast import literal_eval
-from prompts import get_redactor_prompt, redactor_system_prompt, get_mapper_prompt,mapper_system_prompt
+from prompts import get_redactor_prompt, redactor_system_prompt, get_mapper_prompt,mapper_system_prompt, get_unblur_prompt, unblur_system_prompt
 from localcall import local_call
 def get_dictionary_response(response):
     response_line = response.split("\n")
@@ -42,3 +42,11 @@ def get_mapping(instruction, data, redacted_data, local_model):
         return response
     else:
         return {}
+
+def get_unblur_response(remote_response, Sensitive_mapping, local_model):
+    prompt = get_unblur_prompt(remote_response, Sensitive_mapping)
+    response = local_call(prompt,
+                                       system_prompt=unblur_system_prompt,
+                                       local_model=local_model)
+    response = "".join(response).strip('```').strip()
+    return response

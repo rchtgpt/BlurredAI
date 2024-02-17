@@ -1,6 +1,6 @@
 from pdfminer.high_level import extract_text
-from utils import get_redacted_text, get_mapping
-
+from utils import get_redacted_text, get_mapping, get_unblur_response
+from remotecall import remote_call
 
 Filter_result = {}
 Sensitive_mapping = {}
@@ -12,6 +12,7 @@ def user_input(instruction = "", data_str = "", local_model = "mistralai/Mixtral
 
 def process_request(instruction = "", blurred_data = "", local_model = "mistralai/Mixtral-8x7B-Instruct-v0.1" , remote_model = "gpt-3.5-turbo"):
     remote_response = SendToRemote(instruction, blurred_data, remote_model)
+    print(remote_response)
     global Sensitive_mapping
     unblurred_response = UnblurResponse(remote_response, Sensitive_mapping, local_model)
     return remote_response, unblurred_response
@@ -34,13 +35,12 @@ def blur_data(instruction, data_str  , local_model, file_path):
     return redacted_data
 
 def SendToRemote(instruction, blurred_data, remote_model):
-    data = instruction + blurred_data
+    data = instruction + "\n" + blurred_data
     response = remote_call(data, remote_model)
     return response
 
-def UnblurResponse(remote_response = "", local_model = "mistralai/Mixtral-8x7B-Instruct-v0.1"):
-    unblurprompt = get_unblur_prompt(remote_response, Sensitive_mapping)
-    response = get_local_response(local_model, unblurprompt)
+def UnblurResponse(remote_response = "", mapping = {}, local_model = "mistralai/Mixtral-8x7B-Instruct-v0.1"):
+    response = get_unblur_response(remote_response, mapping, local_model)
     return response
 
 def RedoBlurring(user_prompt = "", file_path = "", blurred_input = "", local_model = "mistralai/Mixtral-8x7B-Instruct-v0.1"):
@@ -61,5 +61,6 @@ In my current position at Deepmind, I have honed my skills in Artificial Int, wh
     output = user_input(instruction = "", data_str =data)
     print(output)
     print(Sensitive_mapping)
+    process_output = process_request(instruction = "help me refine the email", blurred_data = output)
     #print(output)
    # app.run(port=5000, debug=True)

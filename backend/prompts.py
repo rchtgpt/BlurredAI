@@ -268,3 +268,8 @@ def get_mapper_prompt(original: str, redacted: str):
 # Do NOT include any part of this instruction in your output. Your response should only be the JSON object containing the redacted text and the redaction mapping.
 # """.strip())
 
+unblur_system_prompt = textwrap.dedent("""
+""".strip())
+
+def get_unblur_prompt(remote_response, Sensitive_mapping):
+  return f"""Please fill the sensitive_data {Sensitive_mapping} into the following response_prompt: {remote_response} and return"""
