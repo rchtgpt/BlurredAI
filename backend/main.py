@@ -1,44 +1,49 @@
-from flask import Flask, jsonify, request
-from prompts import Filter_prompt, Extract_prompt
-from apicall import get_public_response
-from localcall import get_local_response
 from pdfminer.high_level import extract_text
-from utils import clear_filter_response
-app = Flask(__name__)
+from utils import get_redacted_text, get_mapping
 
-#Global_result:
-Filter_result = None
-Sensitive_data = None
-# A simple route that returns a JSON response
-@app.route('/blur_input')
-def BlurInput():
-    user_prompt = request.args.get('prompt', "")
-    file_path = request.args.get('file_path', None)
-    local_model = request.args.get('local_model', "mistralai/Mixtral-8x7B-Instruct-v0.1")
-    file_prompt = ""
+
+Filter_result = {}
+Sensitive_mapping = {}
+
+def user_input(instruction = "", data_str = "", local_model = "mistralai/Mixtral-8x7B-Instruct-v0.1", file_path = ""):
+    if(data_str == "" and file_path == ""):
+        return "I see that you have not provided any data"
+    return blur_data(instruction, data_str, local_model, file_path)
+
+def process_request(instruction = "", blurred_data = "", local_model = "mistralai/Mixtral-8x7B-Instruct-v0.1" , remote_model = "gpt-3.5-turbo"):
+    remote_response = SendToRemote(instruction, blurred_data, remote_model)
+    global Sensitive_mapping
+    unblurred_response = UnblurResponse(remote_response, Sensitive_mapping, local_model)
+    return remote_response, unblurred_response
+
+def reblur_data(instruction = "", data_str = "", blurred_data = "", local_model = "mistralai/Mixtral-8x7B-Instruct-v0.1", file_path = ""):
+	return ""
+ 
+def blur_data(instruction, data_str  , local_model, file_path):
+    file_data = ""
     if(file_path != None):
         if(file_path.endswith(".pdf")):
-            file_prompt = extract_text(file_path)
-    filter_prompt = Filter_prompt(user_prompt, file_prompt)
-    response = get_local_response(local_model, filter_prompt)
-    response_dict = clear_filter_response(response)
-    Sensitive_data = response_dict["sensitive_data"]
-    Filter_result = response_dict["filtered_data"]
-    return response_dict["filtered_data"]
+            file_data = extract_text(file_path)
+        if(file_data.endswith(".txt")):
+            file_data = extract_text(file_path)
+    data = data_str + file_data
+    redacted_data = get_redacted_text(instruction, data, local_model)
+    mapping = get_mapping(instruction, data, redacted_data, local_model)
+    global Sensitive_mapping
+    Sensitive_mapping = mapping
+    return redacted_data
 
-@app.route('/send_to_remote')
-def SendToRemote():
-    blurred_input = request.args.get('blurred_input', "")
-    remote_mode = request.args.get('remote_model', "GPT-3.5-turbo")
-    response = get_public_response(remote_mode, blurred_input)
+def SendToRemote(instruction, blurred_data, remote_model):
+    data = instruction + blurred_data
+    response = remote_call(data, remote_model)
     return response
 
-@app.route('/redo_blurring')
-def RedoBlurring():
-    user_prompt = request.args.get('prompt', "")
-    file_path = request.args.get('file_path', None)
-    blurred_input = request.args.get('blurred_input', "")
-    local_model = request.args.get('local_model', "mistralai/Mixtral-8x7B-Instruct-v0.1")
+def UnblurResponse(remote_response = "", local_model = "mistralai/Mixtral-8x7B-Instruct-v0.1"):
+    unblurprompt = get_unblur_prompt(remote_response, Sensitive_mapping)
+    response = get_local_response(local_model, unblurprompt)
+    return response
+
+def RedoBlurring(user_prompt = "", file_path = "", blurred_input = "", local_model = "mistralai/Mixtral-8x7B-Instruct-v0.1"):
     file_prompt = ""
     if(file_path != None):
         if(file_path.endswith(".pdf")):
@@ -47,13 +52,14 @@ def RedoBlurring():
     redo_result = ""
     return redo_result
 
-@app.route('/unblur_response')
-def UnblurResponse():
-    remote_response = request.args.get('remote_response', "")
-    local_model = request.args.get('local_model', "mistralai/Mixtral-8x7B-Instruct-v0.1")
-    unblurprompt = Extract_prompt(remote_response, Sensitive_data, Filter_result)
-    response = get_local_response(local_model, unblurprompt)
-    return response
-
 if __name__ == '__main__':
-    app.run(port=5000, debug=True)
+    data = """Dear Sam Altman,
+
+I am excited to submit my application for the CEO position at OpenAI. As a mid-level professional with 30 years of experience in Artificial Intelligence, I am confident that my skills and experience make me a strong candidate for the role.
+
+In my current position at Deepmind, I have honed my skills in Artificial Int, which I believe would be a valuable asset to your team. I am particularly drawn to OpenAI's reputation for , and I am eager to contribute my expertise to help achieve the company's goals."""
+    output = user_input(instruction = "", data_str =data)
+    print(output)
+    print(Sensitive_mapping)
+    #print(output)
+   # app.run(port=5000, debug=True)
