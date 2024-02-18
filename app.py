@@ -83,8 +83,6 @@ def main():
         "[Higher level data insights...](https://github.com/streamlit/llm-examples/blob/main/Chatbot.py)"
         "[Git rebase branching...](https://github.com/streamlit/llm-examples/blob/main/Chatbot.py)"
 
-    st.title("BlurredAI")
-    st.caption("A privacy-first inference for any Large Language Model")
     userInputted = False
 
     # Create two columns for the panels
@@ -113,7 +111,7 @@ def main():
                 if (message["role"] == "user"):
                     with st.chat_message(message["role"], avatar="https://github.com/rchtgpt.png"):
                         st.markdown(message["content"])
-                if (message["role"] == "assistant"):
+                if (message["role"] == "blurredAI"):
                     with st.chat_message("assistant", avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuiig-uR57Q6mVe4iMO82umLGrS8tcUjAjSJXToLxhJg&s"):
                         st.markdown(message["content"])
     
@@ -134,13 +132,16 @@ def main():
                     st.session_state.currentPrompt = ""
                     st.session_state.redactedDataApproved = False
                 if(prompt != ""):
-                    show_text = 'Instruction:\n' + prompt + '\n'
-                    if (private_data != ""):
-                        show_text += 'Private Data:\n' + private_data + '\n'
-                    if (file_path != ""):
-                        show_text += 'Private File Preview:\n' + uploaded_file.getbuffer()[:500] + '\n'
                     with st.chat_message("user", avatar="https://github.com/rchtgpt.png"):
-                        st.write_stream(stream_data(show_text))
+                        show_text = f'**Instruction:** {prompt}\n\n'
+                        st.write_stream(stream_data(f'**Instruction:** {prompt}'))
+                        if (private_data != ""):
+                            show_text += f'**Private Data:** {private_data}'
+                            st.write_stream(stream_data(f'**Private Data:** {private_data}'))
+                        if (file_path != ""):
+                            show_text += f'\n\nPrivate File Preview: + {uploaded_file.getbuffer()[:500]}'
+                            st.write_stream(stream_data(f'**Private File Preview:** {uploaded_file.getbuffer()[:500]}'))
+
                     st.session_state.box1messages.append({"role": "user", "content": show_text})
                 if(prompt != ""):
                     redactedText = user_input(prompt, private_data, localModelMapping[localModelChosen], file_path=file_path)
@@ -148,14 +149,19 @@ def main():
                     userInputted = True
                     st.session_state.currentPrompt = prompt
             if (st.session_state.unblurredData != "" and st.session_state.running_state == "finalizing"):
-                print(st.session_state.unblurredData)
-                st.session_state.box1messages.append({"role": "assistant", "content": "**Final Response (Powered by BlurredAI)**\n" + st.session_state.unblurredData})
+                st.session_state.box1messages.append({"role": "blurredAI", "content": "**Final Response (Powered by BlurredAI)**\n" + st.session_state.unblurredData})
                 with st.chat_message("assistant", avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuiig-uR57Q6mVe4iMO82umLGrS8tcUjAjSJXToLxhJg&s"):
                     st.write_stream(stream_data("**Final Response (Powered by BlurredAI)**"))
                     st.write_stream(stream_data(st.session_state.unblurredData))
                 st.session_state.running_state = "done"
 
     def set_state(i):
+        if i == 1:
+            st.session_state.running_state = "reblurring"
+        else:
+            st.session_state.running_state = "blurred"
+            st.session_state.box2messages.append({"role": "blurredAI", "content": f"**Here is what I'm going to send to the remote server, with sensitive information redacted:**\n\n**Instruction:** {st.session_state.currentPrompt}\n\n**Redacted Data:** {st.session_state.redacted}"})
+
         st.session_state.stage = i
 
     # Second panel covering half the page
@@ -168,28 +174,31 @@ def main():
                     st.session_state.box2messages = []
                 # Display chat messages from history on app rerun
                 for message in st.session_state.box2messages:
+                    print("message", message)
                     if (message["role"] == "user"):
                         with st.chat_message(message["role"], avatar="https://github.com/rchtgpt.png"):
                             st.markdown(message["content"])
-                    if (message["role"] == "assistant"):
+                    if (message["role"] == "blurredAI"):
                         with st.chat_message("assistant", avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuiig-uR57Q6mVe4iMO82umLGrS8tcUjAjSJXToLxhJg&s"):
+                            st.markdown(message["content"])
+                    if (message["role"] == "llm"):
+                        with st.chat_message("assistant", avatar="https://freepnglogo.com/images/all_img/1690998192chatgpt-logo-png.png"):
                             st.markdown(message["content"])
                 if st.session_state.redacted != "" and ( st.session_state.running_state == "blurring" or st.session_state.running_state == "reblurred"):
                     with st.chat_message("assistant", avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuiig-uR57Q6mVe4iMO82umLGrS8tcUjAjSJXToLxhJg&s"):
                         st.write_stream(stream_data("**Here is what I'm going to send to the remote server, with sensitive information redacted:**"))
-                        st.write_stream(stream_data(st.session_state.redacted))
+                        st.write_stream(stream_data(f"**Instruction:** {st.session_state.currentPrompt}"))
+                        st.write_stream(stream_data(f"**Redacted Data:** {st.session_state.redacted}"))
                         if st.button("No, reblur", type="secondary", on_click=set_state, args=[1]):
-                            st.session_state.running_state = "reblurring"
+                            st.experimental_rerun()
                             pass  # Placeholder to prevent content from being cleared
                         if st.button("Yes, continue", type="primary", on_click=set_state, args=[2]):
-                            st.session_state.running_state = "blurred"
-                            st.session_state.box2messages.append({"role": "assistant", "content": "**Here is what I'm going to send to the remote server, with sensitive information redacted:**\n"})
-                            st.session_state.box2messages.append({"role": "assistant", "content": st.session_state.redacted})
                             pass  # Placeholder to prevent content from being cleared
                 
                 if st.session_state.running_state == "reblurring":
                     st.session_state.running_state = "reblurred"
                     st.session_state.redacted = reblur_data(st.session_state.currentPrompt, private_data, redactedText, localModelMapping[localModelChosen])
+                    st.experimental_rerun()
 
                 if st.session_state.running_state == "blurred":          
                     raw_output, unblurred_response = process_request(st.session_state.currentPrompt, st.session_state.redacted, localModelMapping[localModelChosen], remoteModelMapping[remoteModelChosen])
@@ -198,7 +207,7 @@ def main():
                     if (st.session_state.rawData != ""):
                         with st.chat_message("assistant", avatar="https://freepnglogo.com/images/all_img/1690998192chatgpt-logo-png.png"):
                             # Append the new message to the chat history
-                            st.session_state.box2messages.append({"role": "assistant", "content": "**Output by LLM (on Filtered Input)**\n" + st.session_state.rawData})
+                            st.session_state.box2messages.append({"role": "llm", "content": f"**Output by LLM (on Filtered Input)**\n\n {st.session_state.rawData}"})
                             # Display only the new message
                             st.write_stream(stream_data("**Output by LLM (on Filtered Input)**"))
                             st.write_stream(stream_data(st.session_state.rawData))
