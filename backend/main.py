@@ -58,8 +58,14 @@ I am excited to submit my application for the CEO position at OpenAI. As a mid-l
 
 In my current position at Deepmind, I have honed my skills in Artificial Int, which I believe would be a valuable asset to your team. I am particularly drawn to OpenAI's reputation for , and I am eager to contribute my expertise to help achieve the company's goals."""
     output = user_input(instruction = "", data_str =data)
+    print("===output===")
     print(output)
+    print("===Sensitive_mapping===")
     print(Sensitive_mapping)
-    process_output = process_request(instruction = "help me refine the email", blurred_data = output)
+    raw_output, unblurred_response= process_request(instruction = "help me refine the email", blurred_data = output)
+    print("===raw_output===")
+    print(raw_output)
+    print("===unblurred_response===")
+    print(unblurred_response)
     #print(output)
    # app.run(port=5000, debug=True)

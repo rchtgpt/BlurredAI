@@ -275,25 +275,22 @@ You are going to replace all the marked data in the text with the mapping given.
 unblur_system_prompt_example = textwrap.dedent("""
 Input:
 ```
-{
-  "sensitive_data": {
-    "PERSON_1": "Peter",
-    "LOCATION_1": "Long Beach, California",
-    "TIME_1": "4 July 1974",
-    "TIME_2": "two months"
-  },
-  "redacted_text": "Sailing from LOCATION_1, PERSON_1 arrived over the recovery site on TIME_1 and conducted salvage operations for more than TIME_2 under total secrecy."
-}
+  "Mapping": {{"PERSON_1": "Peter", "LOCATION_1": "Long Beach, California","TIME_1": "4 July 1974","TIME_2": "two months"}},
+  "Response": Sailing from [LOCATION_1], [PERSON_1] arrived over the recovery site on [TIME_1] and conducted salvage operations for more than [TIME_2] under total secrecy.
+```
+Output:
+```
+Sailing from Long Beach, California, Peter arrived over the recovery site on 4 July 1974 and conducted salvage operations for more than two months under total secrecy.
+```
 ---
 """.strip())
 
 def get_unblur_prompt(remote_response, Sensitive_mapping):
-  print(Sensitive_mapping)
   unblur_prompt_template =  unblur_system_prompt_example + textwrap.dedent('''
   Input:
   ```
-  Mapping:{}
-  Response: {}
+  "Mapping":{}
+  "Response": {}
   ```
   Output:
   ```
