@@ -6,8 +6,10 @@ import pandas as pd
 from io import StringIO
 import sys
 import os
+import re
 sys.path.append(f"./backend/")
 from main import user_input, reblur_data, process_request
+from pdfminer.high_level import extract_text
 UPLOAD_FOLDER = 'uploaded_files/'
 
 def main():
@@ -24,20 +26,20 @@ def main():
         unsafe_allow_html=True,
     )
 
-    styl = f"""<style>
-            .stChatInput {{
-            position: fixed;
-            bottom: 3rem;
-            }}
+    # styl = f"""<style>
+    #         .stChatInput {{
+    #         position: fixed;
+    #         bottom: 3rem;
+    #         }}
 
-            .stFileUploader {{
-            position: fixed;
-            bottom: 3rem;
-            }}
+    #         .stFileUploader {{
+    #         position: fixed;
+    #         bottom: 3rem;
+    #         }}
             
-        </style>
-        """
-    st.markdown(styl, unsafe_allow_html=True)
+    #     </style>
+    #     """
+    # st.markdown(styl, unsafe_allow_html=True)
 
     show_pages(
         [
@@ -80,6 +82,9 @@ def main():
     
     if 'file_path' not in st.session_state:
         st.session_state.file_path = ""
+    
+    if 'private_data' not in st.session_state:
+        st.session_state.private_data = ""
 
     with st.sidebar:
         
@@ -95,10 +100,10 @@ def main():
     # Create two columns for the panels
     col0, col1, col2 = st.columns([2, 3, 3])
 
-    def stream_data(textToDisplay):
-        for word in textToDisplay.split():
-            yield (word + " ")
-            time.sleep(0.04)
+    def stream_data(textToDisplay, stop_time = 0.03):
+        for word in re.split(r'(\s+)', textToDisplay):
+            yield word
+            time.sleep(stop_time)
 
     # First panel covering half the page
     with col0:
@@ -121,37 +126,31 @@ def main():
                 if (message["role"] == "blurredAI"):
                     with st.chat_message("assistant", avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuiig-uR57Q6mVe4iMO82umLGrS8tcUjAjSJXToLxhJg&s"):
                         st.markdown(message["content"])
-    
-            # React to user input
-            if prompt := st.chat_input("Type something here..."):
-                if prompt != "":
-                    ##need to clear all the cache results:
-                    if uploaded_file is not None:
-                        file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
-                        with open(file_path, "wb") as f:
-                            f.write(uploaded_file.getbuffer())
-                    else:
-                        file_path = ""
-                    st.session_state.running_state = "blurring"
-                    st.session_state.redacted = ""
-                    st.session_state.rawData = ""
-                    st.session_state.unblurredData = ""
-                    st.session_state.currentPrompt = ""
-                    st.session_state.redactedDataApproved = False
-                    st.session_state.file_path = file_path
-                if(prompt != ""):
+            
+            if st.session_state.running_state == "prompting":
+                prompt = st.session_state.currentPrompt
+                private_data = st.session_state.private_data
+                uploaded_file = st.uploaded_file
+                file_path = st.session_state.file_path
+                st.session_state.running_state = "blurring"
+                if(st.session_state.currentPrompt != ""):
                     with st.chat_message("user", avatar="https://github.com/rchtgpt.png"):
                         show_text = f'**Instruction:** {prompt}\n\n'
-                        st.write_stream(stream_data(f'**Instruction:** {prompt}'))
+                        st.write_stream(stream_data(f'**Instruction:** {prompt}\n\n', stop_time = 0))
                         if (private_data != ""):
                             show_text += f'**Private Data:** {private_data}'
-                            st.write_stream(stream_data(f'**Private Data:** {private_data}'))
+                            st.write_stream(stream_data(f'**Private Data:** {private_data}', stop_time = 0))
                         if (file_path != ""):
-                            show_text += f'**Private File Preview:** \n{uploaded_file.getvalue()[:500]}'
-                            st.write_stream(stream_data(f'**Private File Preview:** \n{uploaded_file.getvalue()[:500]}'))
-
+                            #turn uploaded file into a string
+                            if file_path.endswith(".csv"):
+                                uploaded_file = pd.read_csv(file_path)
+                                uploaded_file = uploaded_file.to_string()
+                            else:
+                                uploaded_file = extract_text(file_path)
+                            show_text += f'**Private File Preview:** \n\n{uploaded_file[:1000]}'
+                            st.write_stream(stream_data(f'**Private File Preview:** \n\n{uploaded_file[:1000]}', stop_time = 0))
                     st.session_state.box1messages.append({"role": "user", "content": show_text})
-                if(prompt != ""):
+                if(st.session_state.currentPrompt != ""):
                     redactedInstruction, redactedText = user_input(prompt, private_data, localModelMapping[localModelChosen], file_path=file_path)
                     st.session_state.redacted = redactedText
                     st.session_state.redactedInstruction = redactedInstruction
@@ -163,7 +162,23 @@ def main():
                     st.write_stream(stream_data("**Final Response (Powered by BlurredAI)**"))
                     st.write_stream(stream_data(st.session_state.unblurredData))
                 st.session_state.running_state = "done"
-
+        if prompt := st.chat_input("Type something here..."):
+            st.session_state.running_state = "prompting"
+            st.uploaded_file = uploaded_file
+            if uploaded_file is not None:
+                file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
+                with open(file_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+            else:
+                file_path = ""
+            st.session_state.redacted = ""
+            st.session_state.rawData = ""
+            st.session_state.unblurredData = ""
+            st.session_state.currentPrompt = prompt
+            st.session_state.redactedDataApproved = False
+            st.session_state.file_path = file_path
+            st.session_state.private_data = private_data
+            st.experimental_rerun()
     def set_state(i):
         if i == 1:
             st.session_state.running_state = "reblurring"
