@@ -1,7 +1,7 @@
 from openai import OpenAI
 import os
 
-TOGETHER_API_KEY = "77e2c2cf255a71c3c12c6010cb94809f705dd6321b6526a08f389c63530b60bb"
+TOGETHER_API_KEY = ""
 
 def local_call(prompt, system_prompt = "You are an AI assistant", local_model = "mistralai/Mixtral-8x7B-Instruct-v0.1", streaming = False, source = "together", max_tokens = 1024, response_format = None):
    if source == "together":

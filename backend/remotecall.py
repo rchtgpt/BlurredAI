@@ -1,7 +1,7 @@
 import openai
 import os
 
-openai.api_key = "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"
+openai.api_key = ""
 
 def remote_call(prompt, remote_model = "gpt-3.5-turbo"):
     if (remote_model[0:3] == "gpt"):
