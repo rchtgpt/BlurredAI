@@ -46,6 +46,7 @@ def blur_data(instruction, data_str, local_model, file_path):
     if (file_path != None):
         if (file_path.endswith(".pdf")):
             file_data = extract_text(file_path)
+            file_data = file_data.replace("\n\n", "\n")
         if (file_path.endswith(".txt")):
             file_data = extract_text(file_path)
         if (file_path.endswith(".csv")):

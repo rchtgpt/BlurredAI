@@ -1,5 +1,6 @@
 import pandas as pd
 import re
+from tabulate import tabulate
 
 def get_redacted_csv(data_str = "", file_path = "", local_model = ""):
     data = pd.read_csv(file_path)
@@ -29,8 +30,8 @@ def get_redacted_csv(data_str = "", file_path = "", local_model = ""):
             column_mapping[col] = col
     data.replace(mapping, inplace=True)
     data.rename(columns=column_mapping, inplace=True)
-    print(mapping)
-    return data.to_string(), mapping
+    ret_data = tabulate(data, headers=data.columns,tablefmt="orgtbl", showindex=False)
+    return ret_data.replace('\n', '\n\n'), mapping
 
 def get_response_csv(response, Sensitive_mapping, local_model):
     response = re.sub(r'\[([a-zA-Z0-9_]+)\]', r'\1', response)

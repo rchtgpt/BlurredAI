@@ -5,6 +5,7 @@ import time
 import pandas as pd
 from io import StringIO
 import sys
+from tabulate import tabulate
 import os
 import re
 sys.path.append(f"./backend/")
@@ -149,7 +150,9 @@ def main():
                             #turn uploaded file into a string
                             if file_path.endswith(".csv"):
                                 uploaded_file = pd.read_csv(file_path)
-                                uploaded_file = uploaded_file.to_string()
+                                uploaded_file = tabulate(uploaded_file, headers=uploaded_file.columns, tablefmt="github")
+                                #uploaded_file = uploaded_file.replace("\n", "\n\n")
+                                print(uploaded_file)
                             else:
                                 uploaded_file = extract_text(file_path)
                             show_text += f'**Private File Preview:** \n\n{uploaded_file[:1000]}'
