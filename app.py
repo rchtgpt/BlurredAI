@@ -48,6 +48,7 @@ def main():
 
     localModelMapping = {'LLaMA-2 Chat (70B)' : 'meta-llama/Llama-2-70b-chat-hf', 'LLaMA-2 Chat (13B)' : 'meta-llama/Llama-2-13b-chat-hf', 'LLaMA-2 Chat (7B)' : 'meta-llama/Llama-2-7b-chat-hf', 'Mistral (7B) Instruct v0.2' : 'mistralai/Mistral-7B-Instruct-v0.2', 'Mixtral-8x7B Instruct (46.7B)' : 'mistralai/Mixtral-8x7B-Instruct-v0.1'}
     remoteModelMapping = {'GPT-4':'gpt-4-turbo-preview', 'GPT-3.5':'gpt-3.5-turbo', 'Gemini-1.0 Pro': 'gemini-1.0-pro'}
+    redactedInstruction = ""
     redactedText = ""
     rawData = ""
     unblurredData = ""
@@ -64,6 +65,9 @@ def main():
 
     if 'redacted' not in st.session_state:
         st.session_state.redacted = redactedText
+
+    if 'redactedInstruction' not in st.session_state:
+        st.session_state.redactedInstruction = redactedInstruction
 
     if 'rawData' not in st.session_state:
         st.session_state.rawData = rawData
@@ -144,8 +148,9 @@ def main():
 
                     st.session_state.box1messages.append({"role": "user", "content": show_text})
                 if(prompt != ""):
-                    redactedText = user_input(prompt, private_data, localModelMapping[localModelChosen], file_path=file_path)
+                    redactedInstruction, redactedText = user_input(prompt, private_data, localModelMapping[localModelChosen], file_path=file_path)
                     st.session_state.redacted = redactedText
+                    st.session_state.redactedInstruction = redactedInstruction
                     userInputted = True
                     st.session_state.currentPrompt = prompt
             if (st.session_state.unblurredData != "" and st.session_state.running_state == "finalizing"):
@@ -160,7 +165,7 @@ def main():
             st.session_state.running_state = "reblurring"
         else:
             st.session_state.running_state = "blurred"
-            st.session_state.box2messages.append({"role": "blurredAI", "content": f"**Here is what I'm going to send to the remote server, with sensitive information redacted:**\n\n**Instruction:** {st.session_state.currentPrompt}\n\n**Redacted Data:** {st.session_state.redacted}"})
+            st.session_state.box2messages.append({"role": "blurredAI", "content": f"**Here is what I'm going to send to the remote server, with sensitive information redacted:**\n\n**Instruction:** {st.session_state.redactedInstruction}\n\n**Redacted Data:** {st.session_state.redacted}"})
 
         st.session_state.stage = i
 
@@ -187,7 +192,7 @@ def main():
                 if st.session_state.redacted != "" and ( st.session_state.running_state == "blurring" or st.session_state.running_state == "reblurred"):
                     with st.chat_message("assistant", avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuiig-uR57Q6mVe4iMO82umLGrS8tcUjAjSJXToLxhJg&s"):
                         st.write_stream(stream_data("**Here is what I'm going to send to the remote server, with sensitive information redacted:**"))
-                        st.write_stream(stream_data(f"**Instruction:** {st.session_state.currentPrompt}"))
+                        st.write_stream(stream_data(f"**Instruction:** {st.session_state.redactedInstruction}"))
                         st.write_stream(stream_data(f"**Redacted Data:** {st.session_state.redacted}"))
                         if st.button("No, reblur", type="secondary", on_click=set_state, args=[1]):
                             st.experimental_rerun()

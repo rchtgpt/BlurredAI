@@ -14,7 +14,7 @@ def user_input(instruction="",
                file_path=""):
     if (data_str == "" and file_path == ""):
         return "I see that you have not provided any data"
-    return blur_data(instruction, data_str, local_model, file_path)
+    return instruction, blur_data(instruction, data_str, local_model, file_path)
 
 
 def process_request(instruction="",
