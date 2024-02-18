@@ -27,21 +27,6 @@ def main():
         unsafe_allow_html=True,
     )
 
-    # styl = f"""<style>
-    #         .stChatInput {{
-    #         position: fixed;
-    #         bottom: 3rem;
-    #         }}
-
-    #         .stFileUploader {{
-    #         position: fixed;
-    #         bottom: 3rem;
-    #         }}
-            
-    #     </style>
-    #     """
-    # st.markdown(styl, unsafe_allow_html=True)
-
     show_pages(
         [
         Page("app.py", "Chat", ":thought_balloon:"),
@@ -61,7 +46,6 @@ def main():
     file_path = ""
     redactedDataApproved = False
     private_data = ""
-
 
     if 'redactedDataApproved' not in st.session_state:
         st.session_state.redactedDataApproved = redactedDataApproved
