@@ -206,7 +206,7 @@ def main():
                     st.experimental_rerun()
 
                 if st.session_state.running_state == "blurred":          
-                    raw_output, unblurred_response = process_request(st.session_state.currentPrompt, st.session_state.redacted, localModelMapping[localModelChosen], remoteModelMapping[remoteModelChosen])
+                    raw_output, unblurred_response = process_request(st.session_state.redactedInstruction, st.session_state.redacted, localModelMapping[localModelChosen], remoteModelMapping[remoteModelChosen])
                     st.session_state.rawData = raw_output
                     st.session_state.unblurredData = unblurred_response
                     if (st.session_state.rawData != ""):
