@@ -152,7 +152,6 @@ def main():
                                 uploaded_file = pd.read_csv(file_path)
                                 uploaded_file = tabulate(uploaded_file, headers=uploaded_file.columns, tablefmt="github")
                                 #uploaded_file = uploaded_file.replace("\n", "\n\n")
-                                print(uploaded_file)
                             else:
                                 uploaded_file = extract_text(file_path)
                             show_text += f'**Private File Preview:** \n\n{uploaded_file[:1000]}'
