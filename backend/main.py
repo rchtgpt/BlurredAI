@@ -17,7 +17,7 @@ def process_request(instruction = "", blurred_data = "", local_model = "mistrala
     return remote_response, unblurred_response
 
 def reblur_data(instruction = "", data_str = "", blurred_data = "", local_model = "mistralai/Mixtral-8x7B-Instruct-v0.1", file_path = ""):
-	return ""
+	return blur_data(instruction, data_str, local_model, file_path)
  
 def blur_data(instruction, data_str  , local_model, file_path):
     file_data = ""
@@ -42,14 +42,6 @@ def UnblurResponse(remote_response = "", mapping = {}, local_model = "mistralai/
     response = get_unblur_response(remote_response, mapping, local_model)
     return response
 
-def RedoBlurring(user_prompt = "", file_path = "", blurred_input = "", local_model = "mistralai/Mixtral-8x7B-Instruct-v0.1"):
-    file_prompt = ""
-    if(file_path != None):
-        if(file_path.endswith(".pdf")):
-            file_prompt = extract_text(file_path)
-    redo_prompt = ""
-    redo_result = ""
-    return redo_result
 
 if __name__ == '__main__':
     data = """Dear Sam Altman,
