@@ -5,8 +5,10 @@ import time
 import pandas as pd
 from io import StringIO
 import sys
+import os
 sys.path.append(f"./backend/")
 from main import user_input, reblur_data, process_request
+UPLOAD_FOLDER = 'uploaded_files/'
 
 def main():
     st.set_page_config(layout="wide")
@@ -50,7 +52,9 @@ def main():
     rawData = ""
     unblurredData = ""
     currentPrompt = ""
+    file_path = ""
     redactedDataApproved = False
+    private_data = ""
 
     if 'redactedDataApproved' not in st.session_state:
         st.session_state.redactedDataApproved = redactedDataApproved
@@ -66,6 +70,9 @@ def main():
 
     if 'unblurredData' not in st.session_state:
         st.session_state.unblurredData = unblurredData
+    
+    if 'running_state' not in st.session_state:
+        st.session_state.running_state = ""
 
     with st.sidebar:
         
@@ -81,7 +88,7 @@ def main():
     userInputted = False
 
     # Create two columns for the panels
-    col1, col2 = st.columns(spec=2, gap="medium")
+    col0, col1, col2 = st.columns([2, 3, 3])
 
     def stream_data(textToDisplay):
         for word in textToDisplay.split():
@@ -89,44 +96,64 @@ def main():
             time.sleep(0.04)
 
     # First panel covering half the page
+    with col0:
+        st.title("BlurredAI")
+        st.caption("A privacy-first inference for any Large Language Model")
+        private_data = st.text_area("Text your private data here", height=300)
+        uploaded_file = st.file_uploader("Choose a file")
     with col1:
         localModelChosen = st.selectbox('Choose a local language model for filtering',
                 ('Mixtral-8x7B Instruct (46.7B)', 'Mistral (7B) Instruct v0.2', 'LLaMA-2 Chat (70B)', 'LLaMA-2 Chat (13B)', 'LLaMA-2 Chat (7B)',  ))
         with st.container(height=500, border=True):
             # Initialize chat history
-            if "messages" not in st.session_state:
-                st.session_state.messages = []
-
+            if "box1messages" not in st.session_state:
+                st.session_state.box1messages = []
             # Display chat messages from history on app rerun
-            for message in st.session_state.messages:
+            for message in st.session_state.box1messages:
                 if (message["role"] == "user"):
                     with st.chat_message(message["role"], avatar="https://github.com/rchtgpt.png"):
                         st.markdown(message["content"])
-
+                if (message["role"] == "assistant"):
+                    with st.chat_message("assistant", avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuiig-uR57Q6mVe4iMO82umLGrS8tcUjAjSJXToLxhJg&s"):
+                        st.markdown(message["content"])
+    
             # React to user input
             if prompt := st.chat_input("Type something here..."):
-                redactedText = user_input(prompt, """
-                           Dear Sam Altman,
-
-I am excited to submit my application for the CEO position at OpenAI. As a mid-level professional with 30 years of experience in Artificial Intelligence, I am confident that my skills and experience make me a strong candidate for the role.
-
-In my current position at Deepmind, I have honed my skills in Artificial Int, which I believe would be a valuable asset to your team. I am particularly drawn to OpenAI's reputation for , and I am eager to contribute my expertise to help achieve the company's goals.
-                           """, localModelMapping[localModelChosen])
-                st.session_state.redacted = redactedText
-                userInputted = True
-                st.session_state.currentPrompt = prompt
-                # Display user message in chat message container
-                with st.chat_message("user", avatar="https://github.com/rchtgpt.png"):
-                    st.write_stream(stream_data(st.session_state.currentPrompt))
-                # Add user message to chat history
-                st.session_state.messages.append({"role": "user", "content": prompt})
-
-                if (st.session_state.unblurredData != ""):
-                    st.session_state.messages.append({"role": "assistant", "content": st.session_state.unblurredData})
-
-                    with st.chat_message("assistant", avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuiig-uR57Q6mVe4iMO82umLGrS8tcUjAjSJXToLxhJg&s"):
-                        st.write_stream(stream_data("**Final Response (Powered by BlurredAI)**"))
-                        st.write_stream(stream_data(st.session_state.unblurredData))
+                if prompt != "":
+                    ##need to clear all the cache results:
+                    if uploaded_file is not None:
+                        file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
+                        with open(file_path, "wb") as f:
+                            f.write(uploaded_file.getbuffer())
+                    else:
+                        file_path = ""
+                    st.session_state.running_state = "blurring"
+                    st.session_state.redacted = ""
+                    st.session_state.rawData = ""
+                    st.session_state.unblurredData = ""
+                    st.session_state.currentPrompt = ""
+                    st.session_state.redactedDataApproved = False
+                if(prompt != ""):
+                    show_text = 'Instruction:\n' + prompt + '\n'
+                    if (private_data != ""):
+                        show_text += 'Private Data:\n' + private_data + '\n'
+                    if (file_path != ""):
+                        show_text += 'Private File Preview:\n' + uploaded_file.getbuffer()[:500] + '\n'
+                    with st.chat_message("user", avatar="https://github.com/rchtgpt.png"):
+                        st.write_stream(stream_data(show_text))
+                    st.session_state.box1messages.append({"role": "user", "content": show_text})
+                if(prompt != ""):
+                    redactedText = user_input(prompt, private_data, localModelMapping[localModelChosen], file_path=file_path)
+                    st.session_state.redacted = redactedText
+                    userInputted = True
+                    st.session_state.currentPrompt = prompt
+            if (st.session_state.unblurredData != "" and st.session_state.running_state == "finalizing"):
+                print(st.session_state.unblurredData)
+                st.session_state.box1messages.append({"role": "assistant", "content": "**Final Response (Powered by BlurredAI)**\n" + st.session_state.unblurredData})
+                with st.chat_message("assistant", avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuiig-uR57Q6mVe4iMO82umLGrS8tcUjAjSJXToLxhJg&s"):
+                    st.write_stream(stream_data("**Final Response (Powered by BlurredAI)**"))
+                    st.write_stream(stream_data(st.session_state.unblurredData))
+                st.session_state.running_state = "done"
 
     def set_state(i):
         st.session_state.stage = i
@@ -137,66 +164,47 @@ In my current position at Deepmind, I have honed my skills in Artificial Int, wh
                 ('GPT-3.5', 'GPT-4', 'Gemini-1.0 Pro'))
         with st.container(height=500, border=True):
                 # Display assistant response in chat message container
-                if st.session_state.redacted != "":
+                if "box2messages" not in st.session_state:
+                    st.session_state.box2messages = []
+                # Display chat messages from history on app rerun
+                for message in st.session_state.box2messages:
+                    if (message["role"] == "user"):
+                        with st.chat_message(message["role"], avatar="https://github.com/rchtgpt.png"):
+                            st.markdown(message["content"])
+                    if (message["role"] == "assistant"):
+                        with st.chat_message("assistant", avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuiig-uR57Q6mVe4iMO82umLGrS8tcUjAjSJXToLxhJg&s"):
+                            st.markdown(message["content"])
+                if st.session_state.redacted != "" and ( st.session_state.running_state == "blurring" or st.session_state.running_state == "reblurred"):
                     with st.chat_message("assistant", avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuiig-uR57Q6mVe4iMO82umLGrS8tcUjAjSJXToLxhJg&s"):
-                        print(st.session_state.redactedDataApproved)
-                        if (st.session_state.redactedDataApproved == False):
-                            st.write_stream(stream_data("**Here is what I'm going to send to the remote server, with sensitive information redacted:**"))
-                            st.write_stream(stream_data(st.session_state.redacted))
-                        else:
-                            st.write("**Redacted Version for LLM**")
-                            st.write(st.session_state.redacted)
+                        st.write_stream(stream_data("**Here is what I'm going to send to the remote server, with sensitive information redacted:**"))
+                        st.write_stream(stream_data(st.session_state.redacted))
+                        if st.button("No, reblur", type="secondary", on_click=set_state, args=[1]):
+                            st.session_state.running_state = "reblurring"
+                            pass  # Placeholder to prevent content from being cleared
+                        if st.button("Yes, continue", type="primary", on_click=set_state, args=[2]):
+                            st.session_state.running_state = "blurred"
+                            st.session_state.box2messages.append({"role": "assistant", "content": "**Here is what I'm going to send to the remote server, with sensitive information redacted:**\n"})
+                            st.session_state.box2messages.append({"role": "assistant", "content": st.session_state.redacted})
+                            pass  # Placeholder to prevent content from being cleared
+                
+                if st.session_state.running_state == "reblurring":
+                    st.session_state.running_state = "reblurred"
+                    st.session_state.redacted = reblur_data(st.session_state.currentPrompt, private_data, redactedText, localModelMapping[localModelChosen])
 
-
-                        # Add assistant response to chat history
-                        st.session_state.messages.append({"role": "assistant", "content": redactedText})
-
-                        if 'stage' not in st.session_state:
-                            st.session_state.stage = 0
-
-                        if st.session_state.stage == 0:
-                            if st.button("No, reblur", type="secondary", on_click=set_state, args=[1]):
-                                pass  # Placeholder to prevent content from being cleared
-                            if st.button("Yes, continue", type="primary", on_click=set_state, args=[2]):
-                                pass  # Placeholder to prevent content from being cleared
-
-                        if st.session_state.stage == 1:
-                            st.session_state.redacted = reblur_data(st.session_state.currentPrompt, """
-                            Dear Sam Altman,
-
-    I am excited to submit my application for the CEO position at OpenAI. As a mid-level professional with 30 years of experience in Artificial Intelligence, I am confident that my skills and experience make me a strong candidate for the role.
-
-    In my current position at Deepmind, I have honed my skills in Artificial Int, which I believe would be a valuable asset to your team. I am particularly drawn to OpenAI's reputation for , and I am eager to contribute my expertise to help achieve the company's goals.
-                            """, redactedText, localModelMapping[localModelChosen])
-                            st.write_stream(stream_data("**Redacted Version for LLM**"))
-
-                            st.write_stream(stream_data(st.session_state.redacted))
-                            if st.button("No, reblur", type="secondary", on_click=set_state, args=[1]):
-                                pass  # Placeholder to prevent content from being cleared
-                            if st.button("Yes, continue", type="primary", on_click=set_state, args=[2]):
-                                pass  # Placeholder to prevent content from being cleared
-                            
-                        if st.session_state.stage == 2:                            
-                            # process request
-                            raw_output, unblurred_response = process_request(st.session_state.currentPrompt, st.session_state.redacted, localModelMapping[localModelChosen], remoteModelMapping[remoteModelChosen])
-
-                            st.session_state.rawData = raw_output
-                            st.session_state.unblurredData = unblurred_response
-
+                if st.session_state.running_state == "blurred":          
+                    raw_output, unblurred_response = process_request(st.session_state.currentPrompt, st.session_state.redacted, localModelMapping[localModelChosen], remoteModelMapping[remoteModelChosen])
+                    st.session_state.rawData = raw_output
+                    st.session_state.unblurredData = unblurred_response
                     if (st.session_state.rawData != ""):
                         with st.chat_message("assistant", avatar="https://freepnglogo.com/images/all_img/1690998192chatgpt-logo-png.png"):
                             # Append the new message to the chat history
-                            st.session_state.messages.append({"role": "assistant", "content": st.session_state.rawData})
+                            st.session_state.box2messages.append({"role": "assistant", "content": "**Output by LLM (on Filtered Input)**\n" + st.session_state.rawData})
                             # Display only the new message
                             st.write_stream(stream_data("**Output by LLM (on Filtered Input)**"))
                             st.write_stream(stream_data(st.session_state.rawData))
-
-                    if (st.session_state.unblurredData != ""):
-                        st.session_state.messages.append({"role": "assistant", "content": st.session_state.unblurredData})
-
-                        with st.chat_message("assistant", avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuiig-uR57Q6mVe4iMO82umLGrS8tcUjAjSJXToLxhJg&s"):
-                            st.write_stream(stream_data("**Final Response (Powered by BlurredAI)**"))
-                            st.write_stream(stream_data(st.session_state.unblurredData))
+                        st.session_state.running_state = "finalizing"
+                        st.experimental_rerun()
+                        #st.session_state.rawData = ""
 
 if __name__ == "__main__":
     main()
