@@ -1,0 +1,5 @@
+
+# ignore all pycache in all dirs and subdirs
+**/__pycache__/
+**/*.pyc
+**/.DS_Store

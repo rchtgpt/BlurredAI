@@ -6,9 +6,9 @@ def Filter_prompt(user_prompt, file_prompt):
     return f"""please remove all sensitive data from the document below{user_prompt}{file_prompt}
 and return in json format as {{"sensitive_data": , "filtered_data": }}. """
 
+
 def Extract_prompt(response_prompt, sensitive_data):
     return f"""please fill the sensitive_data {sensitive_data} into {response_prompt} and return"""
-
 
 
 redactor_system_prompt = textwrap.dedent("""
@@ -53,7 +53,6 @@ After reviewing the financial reports, [PERSON_1] announced an impressive [NUMBE
 ```
 ---
 """.strip())
-
 
 # NOTE: The following template is deprecrated.
 # Since we are using instruction-following models, having the instruction in it
@@ -107,16 +106,15 @@ After reviewing the financial reports, [PERSON_1] announced an impressive [NUMBE
 
 
 def get_redactor_prompt(data):
-  redactor_prompt_template =  redactor_incontext_examples + textwrap.dedent('''
-  Input:
-  ```
-  {}
-  ```
-  Output:
-  ```
-  ''')
-  return redactor_prompt_template.format(data)
-
+    redactor_prompt_template = redactor_incontext_examples + textwrap.dedent('''
+      Input:
+      ```
+      {}
+      ```
+      Output:
+      ```
+      ''')
+    return redactor_prompt_template.format(data)
 
 
 # ==============================================================================
@@ -126,6 +124,7 @@ You are a helpful assitant to a privacy-aware text redaction expert. The expert 
 """.strip())
 
 mapper_incontext_examples = textwrap.dedent("""
+The following is a list of examples of inputs, redactor's outputs, and the final mapping. Complete the task by redacting the sensitive information in the input text:
 ---
 Input:
 ```
@@ -180,26 +179,26 @@ Output:
 
 
 def get_mapper_prompt(original: str, redacted: str):
-  mapper_prompt_template =  mapper_incontext_examples + textwrap.dedent(f'''
-  Input:
-  ```
-  {original}
-  ```
-  Redactor's Output:
-  ```
-  {redacted}
-  ```
-  Output:
-  ```
-  ''')
-  return mapper_prompt_template
+    mapper_prompt_template = mapper_incontext_examples + textwrap.dedent(f'''
+      Input:
+      ```
+      {original}
+      ```
+      Redactor's Output:
+      ```
+      {redacted}
+      ```
+      Output:
+      ```
+      ''')
+    return mapper_prompt_template
+
 
 # ==============================================================================
 
 #
 # redactor_incontext_examples + "Input:\n```" + data + '\n``
 #           ...: `\nOutput:\n```'
-
 
 # redactor_system_prompt_short = textwrap.dedent("""
 # You are a privacy-aware text redaction tool designed to identify and redact sensitive information in text inputs, ensuring user privacy and data protection. Your task involves scanning the provided text for the following specific types of sensitive information: personal names, locations/addresses, phone numbers, dates, email addresses, URLs, and monetary values. Once identified, you will redact these pieces of information with generic placeholders: "PERSON_1", "LOCATION_1", "PHONE_NUMBER_1", "TIME_1", "EMAIL_1", "URL_1", and "VALUE_1". Ensure each unique piece of sensitive data has a distinct numeric identifier.
@@ -221,7 +220,6 @@ def get_mapper_prompt(original: str, redacted: str):
 # Remember, the primary goal is to protect sensitive information while maintaining the readability and coherence of the text as much as possible. Do NOT include any part of this instruction in your output. Return the redacted text and the mapping as a JSON object.
 # """.strip())
 
-
 # Filter_prompt = [
 # f"""
 # """
@@ -231,9 +229,6 @@ def get_mapper_prompt(original: str, redacted: str):
 # f"""
 # """
 # ]
-
-
-
 
 # redactor_system_prompt = textwrap.dedent("""
 # You are a privacy-aware text redaction tool designed to identify and redact sensitive information in text inputs, ensuring user privacy and data protection. Your task involves scanning the provided text for specific types of sensitive information such as: personal names, locations, phone numbers, addresses, dates, email addresses, URLs, social security numbers (SSN), monetary values, and any other identifiable data. Once identified, you will redact these pieces of information with generic placeholders such as "PERSON_1", "LOCATION_1", "PHONE_NUMBER_1", and so forth, ensuring each unique piece of sensitive data has a distinct numeric identifier.
@@ -269,7 +264,7 @@ def get_mapper_prompt(original: str, redacted: str):
 # """.strip())
 
 unblur_system_prompt = textwrap.dedent("""
-You are going to replace all the marked data in the text with the mapping given. The mapping will be in the form of a JSON object. The JSON object will contain the sensitive data and the corresponding redacted data. The sensitive data will be replaced with the redacted data in the text. The text will be returned as the response. 
+You are a helpful assistant that scans an input text, and does string replacement with the given mapping. The mapping will be in the form of a JSON object / Python dictionary. The JSON object will contain the redacted tag and the corresponding redacted data. The redacted tag will be replaced with the redacted data in the text. The text will be returned as the response.
 """.strip())
 
 unblur_system_prompt_example = textwrap.dedent("""
@@ -285,14 +280,15 @@ Sailing from Long Beach, California, Peter arrived over the recovery site on 4 J
 ---
 """.strip())
 
+
 def get_unblur_prompt(remote_response, Sensitive_mapping):
-  unblur_prompt_template =  unblur_system_prompt_example + textwrap.dedent('''
-  Input:
-  ```
-  "Mapping":{}
-  "Response": {}
-  ```
-  Output:
-  ```
-  ''')
-  return unblur_prompt_template.format(Sensitive_mapping, remote_response)
+    unblur_prompt_template = unblur_system_prompt_example + textwrap.dedent('''
+      Input:
+      ```
+      "Mapping":{}
+      "Response": {}
+      ```
+      Output:
+      ```
+      ''')
+    return unblur_prompt_template.format(Sensitive_mapping, remote_response)
