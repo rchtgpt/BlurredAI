@@ -29,6 +29,8 @@ def get_redacted_text(instruction, data_str, local_model):
                                        system_prompt=redactor_system_prompt,
                                        local_model=local_model)
     response = "".join(response).strip('```').strip()
+    if(response.find("```") != -1):
+        response = response.split("```")[0]
     return response
 
 def get_mapping(instruction, data, redacted_data, local_model):
@@ -45,6 +47,7 @@ def get_mapping(instruction, data, redacted_data, local_model):
 
 def get_unblur_response(remote_response, Sensitive_mapping, local_model):
     prompt = get_unblur_prompt(remote_response, Sensitive_mapping)
+    print(prompt)
     response = local_call(prompt,
                                        system_prompt=unblur_system_prompt,
                                        local_model=local_model)

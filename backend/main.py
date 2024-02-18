@@ -12,7 +12,6 @@ def user_input(instruction = "", data_str = "", local_model = "mistralai/Mixtral
 
 def process_request(instruction = "", blurred_data = "", local_model = "mistralai/Mixtral-8x7B-Instruct-v0.1" , remote_model = "gpt-3.5-turbo"):
     remote_response = SendToRemote(instruction, blurred_data, remote_model)
-    print(remote_response)
     global Sensitive_mapping
     unblurred_response = UnblurResponse(remote_response, Sensitive_mapping, local_model)
     return remote_response, unblurred_response

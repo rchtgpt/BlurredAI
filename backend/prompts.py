@@ -269,7 +269,33 @@ def get_mapper_prompt(original: str, redacted: str):
 # """.strip())
 
 unblur_system_prompt = textwrap.dedent("""
+You are going to replace all the marked data in the text with the mapping given. The mapping will be in the form of a JSON object. The JSON object will contain the sensitive data and the corresponding redacted data. The sensitive data will be replaced with the redacted data in the text. The text will be returned as the response. 
+""".strip())
+
+unblur_system_prompt_example = textwrap.dedent("""
+Input:
+```
+{
+  "sensitive_data": {
+    "PERSON_1": "Peter",
+    "LOCATION_1": "Long Beach, California",
+    "TIME_1": "4 July 1974",
+    "TIME_2": "two months"
+  },
+  "redacted_text": "Sailing from LOCATION_1, PERSON_1 arrived over the recovery site on TIME_1 and conducted salvage operations for more than TIME_2 under total secrecy."
+}
+---
 """.strip())
 
 def get_unblur_prompt(remote_response, Sensitive_mapping):
-  return f"""Please fill the sensitive_data {Sensitive_mapping} into the following response_prompt: {remote_response} and return"""
+  print(Sensitive_mapping)
+  unblur_prompt_template =  unblur_system_prompt_example + textwrap.dedent('''
+  Input:
+  ```
+  Mapping:{}
+  Response: {}
+  ```
+  Output:
+  ```
+  ''')
+  return unblur_prompt_template.format(Sensitive_mapping, remote_response)

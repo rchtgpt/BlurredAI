@@ -3,10 +3,10 @@ import os
 
 openai.api_key = "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"
 
-def remote_call(prompt, model = "gpt-3.5-turbo"):
-    if (model == "gpt-3.5-turbo"):
+def remote_call(prompt, remote_model = "gpt-3.5-turbo"):
+    if (remote_model[0:3] == "gpt"):
         completion = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model=remote_model,
             messages=[
                 {
                     "role": "user",
