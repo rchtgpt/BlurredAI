@@ -13,7 +13,7 @@ from pdfminer.high_level import extract_text
 UPLOAD_FOLDER = 'uploaded_files/'
 
 def main():
-    st.set_page_config(layout="wide")
+    st.set_page_config(layout="wide", initial_sidebar_state="collapsed", page_title="BlurredAI", page_icon="https://media.discordapp.net/attachments/713817450130571416/1208719786041810984/icon.png?ex=65e44f05&is=65d1da05&hm=080bc21bdb34c2fcc95dc6e6bfbc7332223822f3fc1b536762bfc2df879eb3a0&=&format=webp&quality=lossless&width=1376&height=1376")
     st.markdown(
         """
         <style>
@@ -48,7 +48,9 @@ def main():
         ]
     )
 
-    localModelMapping = {'LLaMA-2 Chat (70B)' : 'meta-llama/Llama-2-70b-chat-hf', 'LLaMA-2 Chat (13B)' : 'meta-llama/Llama-2-13b-chat-hf', 'LLaMA-2 Chat (7B)' : 'meta-llama/Llama-2-7b-chat-hf', 'Mistral (7B) Instruct v0.2' : 'mistralai/Mistral-7B-Instruct-v0.2', 'Mixtral-8x7B Instruct (46.7B)' : 'mistralai/Mixtral-8x7B-Instruct-v0.1'}
+    # localModelMapping = {'LLaMA-2 Chat (70B)' : 'meta-llama/Llama-2-70b-chat-hf', 'LLaMA-2 Chat (13B)' : 'meta-llama/Llama-2-13b-chat-hf', 'LLaMA-2 Chat (7B)' : 'meta-llama/Llama-2-7b-chat-hf', 'Mistral (7B) Instruct v0.2' : 'mistralai/Mistral-7B-Instruct-v0.2', 'Mixtral-8x7B Instruct (46.7B)' : 'mistralai/Mixtral-8x7B-Instruct-v0.1'}
+    localModelMapping = {'LLaMA-2 Chat (70B)' : 'mistralai/Mixtral-8x7B-Instruct-v0.1', 'LLaMA-2 Chat (13B)' : 'mistralai/Mixtral-8x7B-Instruct-v0.1', 'LLaMA-2 Chat (7B)' : 'mistralai/Mixtral-8x7B-Instruct-v0.1', 'Mistral (7B) Instruct v0.2' : 'mistralai/Mixtral-8x7B-Instruct-v0.1', 'Mixtral-8x7B Instruct (46.7B)' : 'mistralai/Mixtral-8x7B-Instruct-v0.1'}
+
     remoteModelMapping = {'GPT-4':'gpt-4-turbo-preview', 'GPT-3.5':'gpt-3.5-turbo', 'Gemini-1.0 Pro': 'gemini-1.0-pro'}
     redactedInstruction = ""
     redactedText = ""
@@ -58,6 +60,7 @@ def main():
     file_path = ""
     redactedDataApproved = False
     private_data = ""
+
 
     if 'redactedDataApproved' not in st.session_state:
         st.session_state.redactedDataApproved = redactedDataApproved
@@ -107,14 +110,16 @@ def main():
 
     # First panel covering half the page
     with col0:
-        st.title("BlurredAI")
+        # st.title("BlurredAI")
+        st.image("https://media.discordapp.net/attachments/713817450130571416/1208728527323668520/cover.png?ex=65e4572a&is=65d1e22a&hm=7f169f9aa186d86b8814c0dd124c3486e2db7280886fdf56d9dbf43ac4643e20&=&format=webp&quality=lossless&width=1410&height=452")
         st.caption("A privacy-first inference for any Large Language Model")
         private_data = st.text_area("Text your private data here", height=300)
         uploaded_file = st.file_uploader("Choose a file")
+
     with col1:
-        localModelChosen = st.selectbox('Choose a local language model for filtering',
+        localModelChosen = st.selectbox('Choose a local model to privatize your request',
                 ('Mixtral-8x7B Instruct (46.7B)', 'Mistral (7B) Instruct v0.2', 'LLaMA-2 Chat (70B)', 'LLaMA-2 Chat (13B)', 'LLaMA-2 Chat (7B)',  ))
-        with st.container(height=500, border=True):
+        with st.container(height=650, border=True):
             # Initialize chat history
             if "box1messages" not in st.session_state:
                 st.session_state.box1messages = []
@@ -124,7 +129,7 @@ def main():
                     with st.chat_message(message["role"], avatar="https://github.com/rchtgpt.png"):
                         st.markdown(message["content"])
                 if (message["role"] == "blurredAI"):
-                    with st.chat_message("assistant", avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuiig-uR57Q6mVe4iMO82umLGrS8tcUjAjSJXToLxhJg&s"):
+                    with st.chat_message("assistant", avatar="https://media.discordapp.net/attachments/713817450130571416/1208709666461323305/logo.jpeg?ex=65e44599&is=65d1d099&hm=ac498b5d773ee33297fa4932964e5f6dd146d14fe2250026967cde3e3f60e16c&=&format=webp&width=1006&height=1008"):
                         st.markdown(message["content"])
             
             if st.session_state.running_state == "prompting":
@@ -158,11 +163,11 @@ def main():
                     st.session_state.currentPrompt = prompt
             if (st.session_state.unblurredData != "" and st.session_state.running_state == "finalizing"):
                 st.session_state.box1messages.append({"role": "blurredAI", "content": "**Final Response (Powered by BlurredAI)**\n" + st.session_state.unblurredData})
-                with st.chat_message("assistant", avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuiig-uR57Q6mVe4iMO82umLGrS8tcUjAjSJXToLxhJg&s"):
+                with st.chat_message("assistant", avatar="https://media.discordapp.net/attachments/713817450130571416/1208709666461323305/logo.jpeg?ex=65e44599&is=65d1d099&hm=ac498b5d773ee33297fa4932964e5f6dd146d14fe2250026967cde3e3f60e16c&=&format=webp&width=1006&height=1008"):
                     st.write_stream(stream_data("**Final Response (Powered by BlurredAI)**"))
                     st.write_stream(stream_data(st.session_state.unblurredData))
                 st.session_state.running_state = "done"
-        if prompt := st.chat_input("Type something here..."):
+        if prompt := st.chat_input("Ask me a question about your data (privately)..."):
             st.session_state.running_state = "prompting"
             st.uploaded_file = uploaded_file
             if uploaded_file is not None:
@@ -190,9 +195,9 @@ def main():
 
     # Second panel covering half the page
     with col2:
-        remoteModelChosen = st.selectbox('Choose a remote language model for computation',
-                ('GPT-3.5', 'GPT-4', 'Gemini-1.0 Pro'))
-        with st.container(height=500, border=True):
+        remoteModelChosen = st.selectbox('Choose a remote model to process your private request',
+                ('GPT-4', 'GPT-3.5', 'Gemini-1.0 Pro'))
+        with st.container(height=650, border=True):
                 # Display assistant response in chat message container
                 if "box2messages" not in st.session_state:
                     st.session_state.box2messages = []
@@ -203,13 +208,13 @@ def main():
                         with st.chat_message(message["role"], avatar="https://github.com/rchtgpt.png"):
                             st.markdown(message["content"])
                     if (message["role"] == "blurredAI"):
-                        with st.chat_message("assistant", avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuiig-uR57Q6mVe4iMO82umLGrS8tcUjAjSJXToLxhJg&s"):
+                        with st.chat_message("assistant", avatar="https://media.discordapp.net/attachments/713817450130571416/1208709666461323305/logo.jpeg?ex=65e44599&is=65d1d099&hm=ac498b5d773ee33297fa4932964e5f6dd146d14fe2250026967cde3e3f60e16c&=&format=webp&width=1006&height=1008"):
                             st.markdown(message["content"])
                     if (message["role"] == "llm"):
                         with st.chat_message("assistant", avatar="https://freepnglogo.com/images/all_img/1690998192chatgpt-logo-png.png"):
                             st.markdown(message["content"])
                 if st.session_state.redacted != "" and ( st.session_state.running_state == "blurring" or st.session_state.running_state == "reblurred"):
-                    with st.chat_message("assistant", avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuiig-uR57Q6mVe4iMO82umLGrS8tcUjAjSJXToLxhJg&s"):
+                    with st.chat_message("assistant", avatar="https://media.discordapp.net/attachments/713817450130571416/1208709666461323305/logo.jpeg?ex=65e44599&is=65d1d099&hm=ac498b5d773ee33297fa4932964e5f6dd146d14fe2250026967cde3e3f60e16c&=&format=webp&width=1006&height=1008"):
                         st.write_stream(stream_data("**Here is what I'm going to send to the remote server, with sensitive information redacted:**"))
                         st.write_stream(stream_data(f"**Instruction:** {st.session_state.redactedInstruction}"))
                         st.write_stream(stream_data(f"**Redacted Data:** {st.session_state.redacted}"))
