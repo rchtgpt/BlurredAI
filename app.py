@@ -77,6 +77,9 @@ def main():
     
     if 'running_state' not in st.session_state:
         st.session_state.running_state = ""
+    
+    if 'file_path' not in st.session_state:
+        st.session_state.file_path = ""
 
     with st.sidebar:
         
@@ -135,6 +138,7 @@ def main():
                     st.session_state.unblurredData = ""
                     st.session_state.currentPrompt = ""
                     st.session_state.redactedDataApproved = False
+                    st.session_state.file_path = file_path
                 if(prompt != ""):
                     with st.chat_message("user", avatar="https://github.com/rchtgpt.png"):
                         show_text = f'**Instruction:** {prompt}\n\n'
@@ -143,8 +147,8 @@ def main():
                             show_text += f'**Private Data:** {private_data}'
                             st.write_stream(stream_data(f'**Private Data:** {private_data}'))
                         if (file_path != ""):
-                            show_text += f'\n\nPrivate File Preview: + {uploaded_file.getbuffer()[:500]}'
-                            st.write_stream(stream_data(f'**Private File Preview:** {uploaded_file.getbuffer()[:500]}'))
+                            show_text += f'**Private File Preview:** \n{uploaded_file.getvalue()[:500]}'
+                            st.write_stream(stream_data(f'**Private File Preview:** \n{uploaded_file.getvalue()[:500]}'))
 
                     st.session_state.box1messages.append({"role": "user", "content": show_text})
                 if(prompt != ""):
@@ -202,7 +206,7 @@ def main():
                 
                 if st.session_state.running_state == "reblurring":
                     st.session_state.running_state = "reblurred"
-                    st.session_state.redacted = reblur_data(st.session_state.currentPrompt, private_data, redactedText, localModelMapping[localModelChosen])
+                    st.session_state.redactedInstruction, st.session_state.redacted = reblur_data(st.session_state.currentPrompt, private_data, redactedText, localModelMapping[localModelChosen], file_path = st.session_state.file_path)
                     st.experimental_rerun()
 
                 if st.session_state.running_state == "blurred":          

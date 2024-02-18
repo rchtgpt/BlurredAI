@@ -60,9 +60,9 @@ def get_unblur_response(remote_response, sensitive_mapping: dict, local_model, u
         # Since the original text may have square brackets around the keys, we need to
         # replace them with the keys without the square brackets
         unblurred_response = re.sub(r'\[([a-zA-Z0-9_]+)\]', r'\1', remote_response)
-
+        sensitive_mapping = sorted(sensitive_mapping.items(), key=lambda item: len(item[0]), reverse=True)
         # Now replace the keys with the values
-        for key, value in sensitive_mapping.items():
+        for key, value in sensitive_mapping:
             unblurred_response = unblurred_response.replace(key, value)
 
         return unblurred_response
